@@ -1,0 +1,9 @@
+[Unit]
+Description=key-value + pid in memory storage
+
+[Service]
+ExecStart=/usr/bin/glod
+Restart=always
+
+[Install]
+WantedBy=basic.target
