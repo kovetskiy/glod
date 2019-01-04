@@ -23,6 +23,7 @@ Usage:
   glod [options] server [-s <sock>]
   glod [options] [-s <sock>] set <key> <value> [-p <pid>]
   glod [options] [-s <sock>] get <key>
+  glod [options] [-s <sock>] list
   glod -h | --help
   glod --version
 
@@ -61,6 +62,7 @@ func main() {
 		Socket string
 		Get    bool
 		Set    bool
+		List   bool
 		Key    string
 		Value  string
 		PID    int `docopt:"--pid"`
@@ -88,7 +90,7 @@ func main() {
 	client := dispatcher.NewFuncClient(sockClient)
 
 	if args.Set {
-		_, err := client.Call("set", &RequestSet{
+		_, err := client.Call("set", &Item{
 			Key:   args.Key,
 			Value: args.Value,
 			PID:   args.PID,
@@ -109,6 +111,23 @@ func main() {
 		if response != "" {
 			fmt.Println(response)
 		}
+
+		return
+	}
+
+	if args.List {
+		response, err := client.Call("list", false)
+		if err != nil {
+			log.Fatalf(err, "unable to list keys")
+		}
+
+		if response != nil {
+			for _, item := range response.([]*Item) {
+				fmt.Printf("%s %s\n", item.Key, item.Value)
+			}
+		}
+
+		return
 	}
 }
 

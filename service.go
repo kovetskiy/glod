@@ -14,40 +14,62 @@ const (
 )
 
 type Item struct {
-	Value string
-	PID   int
-}
-
-type RequestSet struct {
 	Key   string
 	Value string
 	PID   int
 }
 
 type Service struct {
-	storage map[string]Item
+	storage []*Item
 	mutex   *sync.RWMutex
 }
 
 func (service *Service) Get(key string) string {
 	service.mutex.RLock()
-	item, ok := service.storage[key]
+	item := service.find(key)
 	service.mutex.RUnlock()
-	if ok {
+	if item != nil {
 		return item.Value
 	}
 
 	return ""
 }
 
-func (service *Service) Set(set *RequestSet) {
+func (service *Service) find(key string) *Item {
+	for _, item := range service.storage {
+		if item.Key == key {
+			return item
+		}
+	}
+
+	return nil
+}
+
+func (service *Service) Set(set *Item) {
 	service.mutex.Lock()
-	service.storage[set.Key] = Item{set.Value, set.PID}
+	item := service.find(set.Key)
+	if item == nil {
+		service.storage = append(service.storage, set)
+	} else {
+		item.Value = set.Value
+		item.PID = set.PID
+	}
 	service.mutex.Unlock()
 
 	if set.PID != 0 {
 		go service.wait(set.PID, set.Key)
 	}
+}
+
+func (service *Service) List(reserved bool) []*Item {
+	items := []*Item{}
+	service.mutex.RLock()
+	for _, item := range service.storage {
+		items = append(items, item)
+	}
+	service.mutex.RUnlock()
+
+	return items
 }
 
 func (service *Service) wait(pid int, key string) {
@@ -62,13 +84,19 @@ func (service *Service) wait(pid int, key string) {
 	}
 
 	service.mutex.Lock()
-	delete(service.storage, key)
+	for i, item := range service.storage {
+		if item.Key == key {
+			service.storage = append(service.storage[:i], service.storage[i+1:]...)
+			break
+		}
+	}
+
 	service.mutex.Unlock()
 }
 
 func NewService() *Service {
 	return &Service{
-		storage: map[string]Item{},
+		storage: []*Item{},
 		mutex:   &sync.RWMutex{},
 	}
 }
@@ -77,6 +105,7 @@ func NewServiceDispatcher(service *Service) *gorpc.Dispatcher {
 	dispatcher := gorpc.NewDispatcher()
 	dispatcher.AddFunc("get", service.Get)
 	dispatcher.AddFunc("set", service.Set)
+	dispatcher.AddFunc("list", service.List)
 
 	return dispatcher
 }
