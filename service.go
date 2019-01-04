@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/valyala/gorpc"
@@ -73,13 +74,13 @@ func (service *Service) List(reserved bool) []*Item {
 }
 
 func (service *Service) wait(pid int, key string) {
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		log.Warningf(err, "unable to find process %d for key %q", pid, key)
-		return
-	}
+	procPath := filepath.Join("/proc", fmt.Sprint(pid))
 
-	for process.Signal(syscall.Signal(0)) == nil {
+	for {
+		_, err := os.Open(procPath)
+		if os.IsNotExist(err) {
+			break
+		}
 		time.Sleep(polling)
 	}
 
