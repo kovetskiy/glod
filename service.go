@@ -58,7 +58,7 @@ func (service *Service) Set(set *Item) {
 	service.mutex.Unlock()
 
 	if set.PID != 0 {
-		go service.wait(set.PID, set.Key)
+		go service.wait(set)
 	}
 }
 
@@ -73,8 +73,8 @@ func (service *Service) List(reserved bool) []*Item {
 	return items
 }
 
-func (service *Service) wait(pid int, key string) {
-	procPath := filepath.Join("/proc", fmt.Sprint(pid))
+func (service *Service) wait(target *Item) {
+	procPath := filepath.Join("/proc", fmt.Sprint(target.PID))
 
 	for {
 		_, err := os.Open(procPath)
@@ -86,7 +86,7 @@ func (service *Service) wait(pid int, key string) {
 
 	service.mutex.Lock()
 	for i, item := range service.storage {
-		if item.Key == key {
+		if item.Key == target.Key && item.PID == target.PID {
 			service.storage = append(service.storage[:i], service.storage[i+1:]...)
 			break
 		}
