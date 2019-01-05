@@ -77,7 +77,10 @@ func (service *Service) wait(target *Item) {
 	procPath := filepath.Join("/proc", fmt.Sprint(target.PID))
 
 	for {
-		_, err := os.Open(procPath)
+		file, err := os.Open(procPath)
+		if file != nil {
+			file.Close()
+		}
 		if os.IsNotExist(err) {
 			break
 		}
