@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/docopt/docopt-go"
 	"github.com/kovetskiy/lorg"
@@ -35,9 +36,7 @@ Options:
 `
 )
 
-var (
-	log *cog.Logger
-)
+var log *cog.Logger
 
 func init() {
 	stderr := lorg.NewLog()
@@ -83,6 +82,7 @@ func main() {
 	}
 
 	sockClient := gorpc.NewUnixClient(args.Socket)
+	sockClient.RequestTimeout = time.Second * 2
 	sockClient.Start()
 	defer sockClient.Stop()
 
