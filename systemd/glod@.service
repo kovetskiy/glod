@@ -2,6 +2,7 @@
 Description=key-value + pid in memory storage
 
 [Service]
+User=%I
 ExecStart=/usr/bin/glod server
 Restart=always
 
