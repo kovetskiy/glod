@@ -1,8 +1,8 @@
 [Unit]
 Description=key-value + pid in memory storage
+After=network.target
 
 [Service]
-User=%I
 ExecStart=/usr/bin/glod server
 Restart=always
 
